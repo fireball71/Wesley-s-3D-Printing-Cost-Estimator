@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useStlStore } from "@/lib/store"
-import { StlViewer } from "@/components/stl-viewer"
+import { ModelViewer } from "@/components/model-viewer"
 import { calculateVolume, estimatePrintTime, calculateCost } from "@/lib/calculations"
-import { Loader2, AlertTriangle, Mail } from "lucide-react"
+import { Loader2, AlertTriangle, Mail, Info, ShoppingCart } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function PrintCalculator() {
-  const { stlFile, fileName } = useStlStore()
+  const { modelFile, fileName } = useStlStore()
   const [volume, setVolume] = useState<number | null>(null)
   const [weight, setWeight] = useState<number | null>(null)
   const [printTime, setPrintTime] = useState<number | null>(null)
@@ -31,7 +32,7 @@ export function PrintCalculator() {
 
   useEffect(() => {
     // Reset calculations when a new file is uploaded
-    if (stlFile) {
+    if (modelFile) {
       setVolume(null)
       setWeight(null)
       setPrintTime(null)
@@ -39,7 +40,7 @@ export function PrintCalculator() {
       setModelDimensions(null)
       setViewerKey((prev) => prev + 1) // Force re-render of viewer when file changes
     }
-  }, [stlFile])
+  }, [modelFile])
 
   // Store the callback in a ref to avoid dependency issues
   useEffect(() => {
@@ -61,13 +62,13 @@ export function PrintCalculator() {
   }, [])
 
   const handleCalculate = async () => {
-    if (!stlFile) return
+    if (!modelFile) return
 
     setIsCalculating(true)
 
     try {
       // Calculate volume in cubic millimeters
-      const volumeInMm3 = await calculateVolume(stlFile)
+      const volumeInMm3 = await calculateVolume(modelFile, fileName)
       const volumeInCm3 = volumeInMm3 / 1000 // Convert to cm³
       setVolume(volumeInCm3)
 
@@ -105,7 +106,7 @@ export function PrintCalculator() {
     window.open(`mailto:wesley.a.tanner@gmail.com?subject=${subject}&body=${body}`, "_blank")
   }
 
-  if (!stlFile) {
+  if (!modelFile) {
     return null
   }
 
@@ -117,17 +118,40 @@ export function PrintCalculator() {
         <div className="lg:col-span-2">
           <Card className="h-[400px] overflow-hidden">
             <CardContent className="p-0 h-full">
-              <StlViewer key={viewerKey} stlFile={stlFile} onModelSize={handleModelSize} />
+              <ModelViewer key={viewerKey} file={modelFile} fileName={fileName} onModelSize={handleModelSize} />
             </CardContent>
           </Card>
 
           {modelDimensions && (
             <div className="mt-2 text-sm text-gray-600">
-              Model dimensions: {modelDimensions.width.toFixed(2)}mm × {modelDimensions.height.toFixed(2)}mm ×{" "}
-              {modelDimensions.depth.toFixed(2)}mm
-              {modelDimensions.isTooLarge && (
-                <span className="text-red-500 ml-2">(Exceeds build volume of 256mm × 256mm × 256mm)</span>
-              )}
+              <div className="flex items-center">
+                <span>
+                  Model dimensions: {modelDimensions.width.toFixed(2)}mm × {modelDimensions.height.toFixed(2)}mm ×{" "}
+                  {modelDimensions.depth.toFixed(2)}mm
+                </span>
+                {modelDimensions.isTooLarge && (
+                  <span className="text-red-500 ml-2">(Exceeds build volume of 256mm × 256mm × 256mm)</span>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="px-2 py-0 h-auto">
+                        <Info className="h-4 w-4 text-gray-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        AI has automatically analyzed and oriented your model for optimal printing.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="mt-1 text-xs text-emerald-600">
+                <span className="inline-flex items-center">
+                  <span className="mr-1">🧠</span> AI has automatically oriented this model for optimal printing
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -146,7 +170,8 @@ export function PrintCalculator() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Model Too Large</AlertTitle>
                   <AlertDescription>
-                    This model exceeds the build volume (256mm × 256mm × 256mm) and cannot be printed in one piece.
+                    This model exceeds the build volume (256mm × 256mm × 256mm) and cannot be printed in one piece. AI
+                    has tried to find the best orientation, but it's still too large.
                   </AlertDescription>
                   <Button
                     variant="destructive"
@@ -196,6 +221,14 @@ export function PrintCalculator() {
                       <span className="text-gray-800 font-medium">Total Cost:</span>
                       <span className="text-xl font-bold text-green-600">${cost.toFixed(2)}</span>
                     </div>
+
+                    {/* Order button */}
+                    <a href="https://sites.google.com/view/w3dprinting/pla-form" className="block w-full mt-4">
+                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Order This Model
+                      </Button>
+                    </a>
                   </div>
                 )}
             </CardContent>

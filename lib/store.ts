@@ -1,15 +1,15 @@
 import { create } from "zustand"
 
-interface StlStoreState {
-  stlFile: ArrayBuffer | null
+interface ModelStoreState {
+  modelFile: ArrayBuffer | null
   fileName: string
-  setStlFile: (file: ArrayBuffer) => void
+  setModelFile: (file: ArrayBuffer) => void
   setFileName: (name: string) => void
 }
 
-export const useStlStore = create<StlStoreState>((set) => ({
-  stlFile: null,
+export const useStlStore = create<ModelStoreState>((set) => ({
+  modelFile: null,
   fileName: "",
-  setStlFile: (file) => set({ stlFile: file }),
+  setModelFile: (file) => set({ modelFile: file }),
   setFileName: (name) => set({ fileName: name }),
 }))

@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "3D Print Cost Calculator",
   description: "Calculate the cost of 3D printing based on filament usage and print time",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({

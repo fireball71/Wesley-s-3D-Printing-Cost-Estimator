@@ -11,7 +11,7 @@ import { useStlStore } from "@/lib/store"
 export function FileUploader() {
   const [isDragging, setIsDragging] = useState(false)
   const { toast } = useToast()
-  const { setStlFile, setFileName } = useStlStore()
+  const { setModelFile, setFileName } = useStlStore()
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -41,7 +41,9 @@ export function FileUploader() {
     if (files.length === 0) return
 
     const file = files[0]
-    if (!file.name.toLowerCase().endsWith(".stl")) {
+    const fileName = file.name.toLowerCase()
+
+    if (!fileName.endsWith(".stl") && !fileName.endsWith(".3mf")) {
       toast({
         title: "Invalid file format",
         description: "Please upload an STL file",
@@ -54,7 +56,7 @@ export function FileUploader() {
     const reader = new FileReader()
     reader.onload = (e) => {
       if (e.target?.result) {
-        setStlFile(e.target.result as ArrayBuffer)
+        setModelFile(e.target.result as ArrayBuffer)
         setFileName(file.name)
         toast({
           title: "File uploaded successfully",
@@ -81,7 +83,7 @@ export function FileUploader() {
           <p className="text-sm text-gray-500">Supported file format: .STL</p>
         </div>
         <div>
-          <input id="file-upload" type="file" accept=".stl" className="sr-only" onChange={handleFileInput} />
+          <input id="file-upload" type="file" accept=".stl,.3mf" className="sr-only" onChange={handleFileInput} />
           <label htmlFor="file-upload">
             <Button variant="outline" className="cursor-pointer" asChild>
               <span>Browse files</span>
