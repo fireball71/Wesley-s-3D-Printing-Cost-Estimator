@@ -9,6 +9,7 @@ import { calculateVolume, estimatePrintTime, calculateCost } from "@/lib/calcula
 import { Loader2, AlertTriangle, Mail, Info, ShoppingCart } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useToast } from "@/hooks/use-toast"
 
 export function PrintCalculator() {
   const { modelFile, fileName } = useStlStore()
@@ -17,6 +18,7 @@ export function PrintCalculator() {
   const [printTime, setPrintTime] = useState<number | null>(null)
   const [cost, setCost] = useState<number | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
+  const [isOrdering, setIsOrdering] = useState(false)
   const [viewerKey, setViewerKey] = useState(0) // Add key to force re-render
   const [modelDimensions, setModelDimensions] = useState<{
     width: number
@@ -25,10 +27,14 @@ export function PrintCalculator() {
     isTooLarge: boolean
   } | null>(null)
   const modelSizeCallbackRef = useRef<Function | null>(null)
+  const { toast } = useToast()
 
   // Hardcoded values for PLA density and 20% infill
   const density = 1.24 // PLA density in g/cm³
   const infill = 20 // Fixed infill percentage
+
+  // Order form URL
+  const orderFormUrl = "https://sites.google.com/view/w3dprinting/pla-form"
 
   useEffect(() => {
     // Reset calculations when a new file is uploaded
@@ -104,6 +110,44 @@ export function PrintCalculator() {
     )
 
     window.open(`mailto:wesley.a.tanner@gmail.com?subject=${subject}&body=${body}`, "_blank")
+  }
+
+  // Handle order button click with error handling
+  const handleOrderClick = () => {
+    setIsOrdering(true)
+
+    // Create a timeout to detect if the navigation fails
+    const navigationTimeout = setTimeout(() => {
+      // If we're still here after the timeout, the navigation likely failed
+      setIsOrdering(false)
+      toast({
+        title: "Connection Error",
+        description: "Unable to reach the order form. Please try again later or contact support.",
+        variant: "destructive",
+      })
+    }, 5000) // 5 second timeout
+
+    try {
+      // Before navigating, clear the timeout if navigation starts
+      window.addEventListener(
+        "beforeunload",
+        () => {
+          clearTimeout(navigationTimeout)
+        },
+        { once: true },
+      )
+
+      // Navigate to the order form
+      window.location.href = orderFormUrl
+    } catch (error) {
+      clearTimeout(navigationTimeout)
+      setIsOrdering(false)
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (!modelFile) {
@@ -222,13 +266,24 @@ export function PrintCalculator() {
                       <span className="text-xl font-bold text-green-600">${cost.toFixed(2)}</span>
                     </div>
 
-                    {/* Order button */}
-                    <a href="https://sites.google.com/view/w3dprinting/pla-form" className="block w-full mt-4">
-                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Order This Model
-                      </Button>
-                    </a>
+                    {/* Order button with error handling */}
+                    <Button
+                      className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={handleOrderClick}
+                      disabled={isOrdering}
+                    >
+                      {isOrdering ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Redirecting...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Order This Model
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
             </CardContent>
